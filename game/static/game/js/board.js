@@ -33,6 +33,7 @@
             let touchStartPos = null;
             let activeTouchPieceClone = null;
             let touchDragSrc = null;
+            let touchTapSquare = null;
             let touchDragging = false;
             let touchOffset = { x: 0, y: 0 };
 
@@ -3304,10 +3305,18 @@ if (leaveConfirmNo) leaveConfirmNo.addEventListener('click', () => {
                 const squareEl = e.target.closest('.square');
                 if (!squareEl) return;
 
-                const r = parseInt(squareEl.dataset.r);
-                const c = parseInt(squareEl.dataset.c);
+                if (paused || gameOver || replayMode) return;
+
+                const r = parseInt(squareEl.dataset.r, 10);
+                const c = parseInt(squareEl.dataset.c, 10);
                 const piece = board[r][c];
-                if (!piece || paused || gameOver) return;
+
+                touchStartPos = { x: touch.clientX, y: touch.clientY };
+                touchTapSquare = { r, c };
+                touchDragSrc = null;
+                touchDragging = false;
+
+                if (!piece) return;
 
                 // Check if the piece is playable by the current player (including AI premoves)
                 const isPremoveDrag = gameMode === 'ai' && turn !== playerColor && pColor(piece) === playerColor;
@@ -3315,13 +3324,11 @@ if (leaveConfirmNo) leaveConfirmNo.addEventListener('click', () => {
 
                 if (!isPremoveDrag && !isNormalDrag) return;
 
-                touchStartPos = { x: touch.clientX, y: touch.clientY };
                 touchDragSrc = { r, c };
-                touchDragging = false;
             }, { passive: true });
 
             boardEl.addEventListener('touchmove', (e) => {
-                if (!touchDragSrc) return;
+                if (!touchDragSrc || !touchStartPos) return;
 
                 const touch = e.touches[0];
                 
@@ -3376,12 +3383,12 @@ if (leaveConfirmNo) leaveConfirmNo.addEventListener('click', () => {
             }, { passive: false });
 
             boardEl.addEventListener('touchend', (e) => {
-                if (!touchDragSrc) return;
+                if (!touchStartPos) return;
 
                 const touch = e.changedTouches[0];
                 let movedToSquare = false;
 
-                if (touchDragging) {
+                if (touchDragging && touchDragSrc) {
                     // Clean up original piece transparency
                     const srcSquareEl = sq(touchDragSrc.r, touchDragSrc.c);
                     const pieceImg = srcSquareEl ? srcSquareEl.querySelector('.piece') : null;
@@ -3399,8 +3406,8 @@ if (leaveConfirmNo) leaveConfirmNo.addEventListener('click', () => {
                     const targetEl = document.elementFromPoint(touch.clientX, touch.clientY);
                     const destSquareEl = targetEl ? targetEl.closest('.square') : null;
                     if (destSquareEl) {
-                        const tr = parseInt(destSquareEl.dataset.r);
-                        const tc = parseInt(destSquareEl.dataset.c);
+                        const tr = parseInt(destSquareEl.dataset.r, 10);
+                        const tc = parseInt(destSquareEl.dataset.c, 10);
 
                         if (tr !== touchDragSrc.r || tc !== touchDragSrc.c) {
                             tryMove(touchDragSrc.r, touchDragSrc.c, tr, tc);
@@ -3415,20 +3422,29 @@ if (leaveConfirmNo) leaveConfirmNo.addEventListener('click', () => {
                     // Prevent click generation
                     e.preventDefault();
                 } else {
-                    // Quick tap -> trigger default click/tap behavior
-                    onClick(touchDragSrc.r, touchDragSrc.c);
+                    // Quick tap -> allow tap-to-select and tap-to-destination behavior
+                    const targetEl = document.elementFromPoint(touch.clientX, touch.clientY);
+                    const tapSquareEl = targetEl ? targetEl.closest('.square') : null;
+                    const tapR = tapSquareEl ? parseInt(tapSquareEl.dataset.r, 10) : touchTapSquare?.r;
+                    const tapC = tapSquareEl ? parseInt(tapSquareEl.dataset.c, 10) : touchTapSquare?.c;
+
+                    if (Number.isInteger(tapR) && Number.isInteger(tapC)) {
+                        onClick(tapR, tapC);
+                        e.preventDefault();
+                    }
                 }
 
                 // Reset state
                 touchStartPos = null;
                 touchDragSrc = null;
+                touchTapSquare = null;
                 touchDragging = false;
             }, { passive: false });
 
             boardEl.addEventListener('touchcancel', (e) => {
-                if (!touchDragSrc) return;
+                if (!touchStartPos) return;
 
-                if (touchDragging) {
+                if (touchDragging && touchDragSrc) {
                     const srcSquareEl = sq(touchDragSrc.r, touchDragSrc.c);
                     const pieceImg = srcSquareEl ? srcSquareEl.querySelector('.piece') : null;
                     if (pieceImg) {
@@ -3445,6 +3461,7 @@ if (leaveConfirmNo) leaveConfirmNo.addEventListener('click', () => {
 
                 touchStartPos = null;
                 touchDragSrc = null;
+                touchTapSquare = null;
                 touchDragging = false;
             }, { passive: true });
 

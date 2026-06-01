@@ -275,6 +275,14 @@
             };
 
             let soundEnabled = true;
+            try {
+                const savedSound = localStorage.getItem('chessSoundEnabled');
+                if (savedSound !== null) {
+                    soundEnabled = (savedSound === 'true');
+                }
+            } catch (e) {
+                console.error("Failed to load sound settings", e);
+            }
 
             function validatePlayerNames() {
                 const wNameInput = document.getElementById('whiteNameInput');
@@ -320,6 +328,11 @@
 
             function toggleMute() {
                 soundEnabled = !soundEnabled;
+                try {
+                    localStorage.setItem('chessSoundEnabled', String(soundEnabled));
+                } catch (e) {
+                    console.error("Failed to save sound settings", e);
+                }
                 if (muteBtn) {
                     muteBtn.textContent = soundEnabled ? '🔊 Sound On' : '🔇 Muted';
                     muteBtn.setAttribute('aria-pressed', String(soundEnabled));
@@ -3408,10 +3421,21 @@
                 });
             }
 
+            function initSoundButtonState() {
+                if (muteBtn) {
+                    muteBtn.textContent = soundEnabled ? '🔊 Sound On' : '🔇 Muted';
+                    muteBtn.setAttribute('aria-pressed', String(soundEnabled));
+                }
+            }
+
             if (document.readyState === 'loading') {
-                document.addEventListener('DOMContentLoaded', initThemeSwitcher);
+                document.addEventListener('DOMContentLoaded', () => {
+                    initThemeSwitcher();
+                    initSoundButtonState();
+                });
             } else {
                 initThemeSwitcher();
+                initSoundButtonState();
             }
 
     document.addEventListener('visibilitychange', async() => {

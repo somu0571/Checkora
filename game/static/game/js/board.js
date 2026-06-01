@@ -3512,11 +3512,8 @@
 
                 const key = e.key.toLowerCase();
                 const hasBlockingOverlay =
-                    document.querySelector(
-                        '.modal.show, [role="dialog"]:not([hidden]), .promo-overlay.active'
-                    ) ||
-                    (shareModal?.style.display && shareModal.style.display !== 'none') ||
-                    (rulebookModal?.style.display && rulebookModal.style.display !== 'none') ||
+                    (shareModal?.style.display === 'flex') ||
+                    (rulebookModal?.style.display === 'flex') ||
                     fenOverlay?.classList.contains('active') ||
                     confirmOverlay?.classList.contains('active') ||
                     drawOverlay?.classList.contains('active') ||
@@ -3547,6 +3544,9 @@
                 } else if (key === 'a' && newAIBtn) {
                     e.preventDefault();
                     newAIBtn.click();
+                } else if (key === 'h') {
+                    e.preventDefault();
+                    window.location.href = '/';
 
                 } else if (key === 'escape') {
                     e.preventDefault();

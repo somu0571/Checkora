@@ -868,73 +868,81 @@
                 const s = boardEl.querySelector('.square');
                 return s ? s.getBoundingClientRect().width : 60;
             }
-
+            
             async function animateMove(fr, fc, tr, tc) {
+                console.log("ANIMATE:", fr, fc, "->", tr, tc);
                 if (window.matchMedia('(prefers-reduced-motion: reduce)').matches) return;
 
-                const animations = [];
-                const size = getSquareSize();
-                const mult = flipped ? -1 : 1;
+    const animations = [];
+    const size = getSquareSize();
+    const mult = flipped ? -1 : 1;
 
-                function createAnim(p, dRow, dCol) {
-                    return new Promise(resolve => {
-                       const ghost = p.cloneNode(true);
-                       ghost.className = 'piece-ghost';
-                       ghost.style.width = p.offsetWidth + 'px';
-                       ghost.style.height = p.offsetHeight + 'px';
-                       p.parentElement.appendChild(ghost);
-                       setTimeout(() => ghost.remove(), 300);
+    function createAnim(p, dRow, dCol) {
+        return new Promise(resolve => {
+            const ghost = p.cloneNode(true);
+            ghost.className = 'piece-ghost';
+            ghost.style.width = p.offsetWidth + 'px';
+            ghost.style.height = p.offsetHeight + 'px';
+            ghost.style.position = 'absolute';
+            ghost.style.top = '0';
+            ghost.style.left = '0';
+            ghost.style.pointerEvents = 'none';
+            ghost.style.zIndex = '9999';
+            ghost.style.opacity = '1';
+            ghost.style.border = '2px solid red';
+            p.parentElement.appendChild(ghost);
+            setTimeout(() => ghost.remove(), 300);
 
-                       p.style.transition = 'transform 0.25s ease-in-out, opacity 0.2s ease';
+            p.classList.add('moving');
+            p.style.transition = 'transform 0.25s ease-in-out, opacity 0.2s ease';
+            p.style.transform = `translate(${dCol * size * mult}px, ${dRow * size * mult}px)`;
 
-                        const onEnd = () => {
-                            p.removeEventListener('transitionend', onEnd);
-                            p.classList.remove('moving');
-                            p.style.transform = 'none';
-                            p.style.transition = '';
-                            resolve();
-                        };
-                        p.addEventListener('transitionend', onEnd);
-                        setTimeout(onEnd, 300);
-                    });
-                }
+            const onEnd = () => {
+                p.removeEventListener('transitionend', onEnd);
+                p.classList.remove('moving');
+                p.style.transform = 'none';
+                p.style.transition = '';
+                resolve();
+            };
+            p.addEventListener('transitionend', onEnd);
+            setTimeout(onEnd, 300);
+        });
+    }
 
-                // 1. Moving piece
-                const piece = sq(fr, fc).querySelector('.piece');
-                if (piece) {
-                    animations.push(createAnim(piece, tr - fr, tc - fc));
-                    
-                    // 2. Castling detection
-                    const pType = board[fr][fc];
-                    if (pType && pType.toLowerCase() === 'k' && Math.abs(tc - fc) === 2) {
-                        const isShort = tc > fc;
-                        const rookFr = fr;
-                        const rookFc = isShort ? 7 : 0;
-                        const rookTr = fr;
-                        const rookTc = isShort ? 5 : 3;
-                        const rook = sq(rookFr, rookFc).querySelector('.piece');
-                        if (rook) {
-                            animations.push(createAnim(rook, rookTr - rookFr, rookTc - rookFc));
-                        }
-                    }
-                }
+    const piece = sq(fr, fc).querySelector('.piece');
+    if (piece) {
+        animations.push(createAnim(piece, tr - fr, tc - fc));
 
-                // 3. Capture detection (including En Passant)
-                let capturedSq = sq(tr, tc);
-                // En Passant: capture pawn is not on target square
-                const isEnPassant = piece && piece.src.includes('p.png') && fc !== tc && !board[tr][tc];
-                if (isEnPassant) {
-                    capturedSq = sq(fr, tc);
-                }
-                
-                const targetPiece = capturedSq.querySelector('.piece');
-                if (targetPiece) {
-                    targetPiece.classList.add('captured');
-                }
-
-                await Promise.all(animations);
+        const pType = board[fr][fc];
+        if (pType && pType.toLowerCase() === 'k' && Math.abs(tc - fc) === 2) {
+            const isShort = tc > fc;
+            const rookFr = fr;
+            const rookFc = isShort ? 7 : 0;
+            const rookTr = fr;
+            const rookTc = isShort ? 5 : 3;
+            const rook = sq(rookFr, rookFc).querySelector('.piece');
+            if (rook) {
+                animations.push(createAnim(rook, rookTr - rookFr, rookTc - rookFc));
             }
+        }
+    }
 
+    let capturedSq = sq(tr, tc);
+    const isEnPassant = piece && piece.src.includes('p.png') && fc !== tc && !board[tr][tc];
+    if (isEnPassant) {
+        capturedSq = sq(fr, tc);
+    }
+
+    const targetPiece = capturedSq.querySelector('.piece');
+    if (targetPiece) {
+        targetPiece.classList.add('captured');
+    }
+
+    await Promise.all(animations);
+}
+            
+         
+              
             function parseBoard(s) {
                 if (!s || typeof s !== 'string') return s;
                 const b = [];

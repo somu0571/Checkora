@@ -961,10 +961,13 @@ class DrawRuleTest(SimpleTestCase):
     # e5xd6 en passant
         success, _, captured, _ = game.make_move(3, 4, 2, 3)
 
+
         self.assertTrue(success)
         self.assertEqual(captured, 'p')
-        self.assertEqual(game.board[2][3], 'P')
-        self.assertIsNone(game.board[3][3])    
+        
+        #self.assertEqual(game.board[3][4])      # e5 empty
+        self.assertIsNone(game.board[3][3])     # captured pawn removed
+        self.assertEqual(game.board[2][3], 'P') # white pawn moved to d6
         
     def test_en_passant_expires_after_one_turn(self):
         game = ChessGame()

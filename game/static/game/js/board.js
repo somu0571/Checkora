@@ -1720,14 +1720,12 @@
         const seq = ++aiRequestSeq;
         aiThinking = true;
 
-        // fix: animated thinking dots
-        let dots = 1;
+        // AI state is already shown in the turn badge
         const thinkingInterval = setInterval(() => {
-            if (!aiThinking) { clearInterval(thinkingInterval); return; }
-            showStatus('AI is thinking' + '.'.repeat(dots), false);
-            dots = (dots % 3) + 1;
+            if (!aiThinking) {
+                clearInterval(thinkingInterval);
+            }
         }, 400);
-
         try {
             let piecesOnBoard = 0;
             for (let r = 0; r < 8; r++) {

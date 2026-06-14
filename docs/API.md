@@ -663,126 +663,140 @@ Different endpoints may return different error payloads depending on the operati
 }
 ```
 
-## Authentication APIs
+## Authentication Endpoints
 
-## 1. Register User
+### 1. Register User
 
 Creates a new user account and sends an OTP verification code to the registered email address.
 
 * **URL:** `/register/`
-* **Method:** `POST`
+* **Methods:** `GET`, `POST`
+* **Authentication:** Public
+* **CSRF Protection:** Required for POST requests
 
-* **Request Body:**
+**POST Parameters**
 
-```json
-{
-  "username": "john_doe",
-  "email": "john@example.com",
-  "password1": "StrongPassword123",
-  "password2": "StrongPassword123"
-}
-```
+| Parameter | Type   | Required | Description           |
+| --------- | ------ | -------- | --------------------- |
+| username  | string | Yes      | Desired username      |
+| email     | string | Yes      | User email address    |
+| password1 | string | Yes      | Password              |
+| password2 | string | Yes      | Password confirmation |
 
-* **Success Response:**
+**Success Behavior**
 
-```json
-{
-  "message": "Verification code sent to email"
-}
-```
+* Creates an inactive user account.
+* Sends a verification OTP to the provided email address.
+* Redirects to `/verify-otp/`.
 
-* **Notes:**
-  - Account remains inactive until OTP verification.
-  - OTP expires after 5 minutes.
+**Error Conditions**
 
+* Invalid form data.
+* Username or email conflicts.
+* OTP delivery failure.
 
-## 2. Verify OTP
+**Security Notes**
 
-Verifies the OTP sent during registration and activates the account.
+* OTP expires after 5 minutes.
+* Registration flow includes protections against account enumeration.
+* Concurrent registration requests are rate-limited.
+
+---
+
+### 2. Verify OTP
+
+Activates a newly registered account.
 
 * **URL:** `/verify-otp/`
-* **Method:** `POST`
+* **Methods:** `GET`, `POST`
+* **Authentication:** Public
+* **CSRF Protection:** Required for POST requests
 
-* **Request Body:**
+**POST Parameters**
 
-```json
-{
-  "otp": "123456"
-}
-```
+| Parameter | Type   | Required |
+| --------- | ------ | -------- |
+| otp       | string | Yes      |
 
-* **Success Response:**
+**Success Behavior**
 
-```json
-{
-  "message": "Account verified successfully"
-}
-```
+* Activates the user account.
+* Logs the user in.
+* Redirects to the application.
 
-* **Notes:**
-  - OTP expires after 5 minutes.
-  - Maximum 5 incorrect attempts allowed.
+**Error Conditions**
 
+* Invalid OTP.
+* Expired OTP.
+* Missing registration session.
 
-## 3. Resend OTP
+**Security Notes**
 
-Generates and sends a new OTP code.
+* OTP expires after 5 minutes.
+* Maximum 5 failed verification attempts.
+
+---
+
+### 3. Resend OTP
+
+Generates and sends a new verification code.
 
 * **URL:** `/resend-otp/`
-* **Method:** `GET`
+* **Methods:** `GET`
+* **Authentication:** Public
 
-* **Success Response:**
+**Success Behavior**
 
-```json
-{
-  "message": "A new OTP has been sent"
-}
-```
+* Generates a new OTP.
+* Sends the OTP to the registered email address.
+* Redirects back to the verification page.
 
-* **Notes:**
-  - Cooldown: 60 seconds between OTP requests.
+**Security Notes**
 
+* 60-second cooldown between OTP requests.
 
-## 4. Login
+---
+
+### 4. Login
 
 Authenticates a user and creates a session.
 
 * **URL:** `/login/`
-* **Method:** `POST`
+* **Methods:** `GET`, `POST`
+* **Authentication:** Public
+* **CSRF Protection:** Required for POST requests
 
-* **Request Body:**
+**POST Parameters**
 
-```json
-{
-  "username": "john_doe",
-  "password": "StrongPassword123",
-  "remember_me": true
-}
-```
+| Parameter   | Type    | Required |
+| ----------- | ------- | -------- |
+| username    | string  | Yes      |
+| password    | string  | Yes      |
+| remember_me | boolean | No       |
 
-* **Success Response:**
+**Success Behavior**
 
-```json
-{
-  "message": "Login successful"
-}
-```
+* Creates an authenticated session.
+* Redirects to `/home/`.
 
-* **Notes:**
-  - Supports "Remember Me" sessions.
-  - Includes username and IP-based lockout protection.
+**Security Notes**
 
-## 5. Logout
+* Username-based lockout protection.
+* IP-based lockout protection.
+* Session fixation protection via session key rotation.
 
-Ends the current user session.
+---
+
+### 5. Logout
+
+Ends the current authenticated session.
 
 * **URL:** `/logout/`
-* **Method:** `GET`
+* **Methods:** `GET`
+* **Authentication:** Authenticated user
 
-* **Success Response:**
+**Success Behavior**
 
-```json
-{
-  "message": "Logged out successfully"
-}
-```
+* Logs out the current user.
+* Redirects to `/home/`.
+
